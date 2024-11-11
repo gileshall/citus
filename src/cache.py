@@ -39,23 +39,6 @@ class DOIReference:
     def suffix(self):
         return self._suffix
 
-
-def cache_result(filename_template):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            filename = filename_template.format(
-                prefix=self.doi_reference.prefix,
-                suffix=self.doi_reference.suffix
-            )
-            cache_path = os.path.join(self.cache_path, filename)
-            if not os.path.exists(cache_path):
-                func(self, cache_path, *args, **kwargs)
-            return cache_path
-        return wrapper
-    return decorator
-
-
 class DOI:
     def __init__(self, cache_path, doi_reference):
         if not isinstance(doi_reference, DOIReference):
@@ -109,9 +92,6 @@ class DOIFactory:
             os.makedirs(self.base_path)
 
     def create_doi(self, doi_input):
-        """
-        Create a DOI object with a cache path based on the given DOI input.
-        """
         doi_reference = DOIReference(doi_input)
         cache_dir = self._get_cache_directory(doi_reference)
         return DOI(cache_path=cache_dir, doi_reference=doi_reference)
