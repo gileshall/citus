@@ -148,7 +148,9 @@ def get_article_status(root):
     status = root.find('.//tei:sourceDesc/tei:biblStruct/tei:note[@type="submission"]', ns)
     return f"## Article Status\n\n{status.text.strip()}\n\n" if status is not None and status.text else ""
 
-def main(file_path):
+def convert_tei_to_text(file_path, output_path=None):
+    output_path = output_path or f"{file_path}.txt"
+
     # Parse the XML file
     tree = ET.parse(file_path)
     root = tree.getroot()
@@ -167,11 +169,14 @@ def main(file_path):
     output += get_article_status(root)
     
     # Print the complete output
-    print(output)
+    with open(output_path, 'w') as fh:
+        fh.write(output)
+
+    return output
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python extract_tei_full_text.py <filename>")
+    if len(sys.argv) < 2:
+        print("Usage: python extract_tei_full_text.py <filename> [output]")
     else:
-        file_path = sys.argv[1]
-        main(file_path)
+        args = sys.argv[1:3]
+        print(convert_tei_to_text(*args))
