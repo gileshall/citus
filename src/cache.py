@@ -7,6 +7,7 @@ from functools import wraps
 from crossref import restful as xref
 from grobid import extract_text
 from tei import convert_tei_to_text
+from analysis import analyze_article
 
 class DOIReference:
     def __init__(self, doi_input):
@@ -111,6 +112,16 @@ class DOI:
         txt_path = os.path.join(self.cache_path, txt_filename)
         convert_tei_to_text(tei_path, txt_path)
         return txt_path
+    
+    def analyze_article(self):
+        txt_path = self.extract_text()
+        analysis_filename = self.format_filename('analysis.json')
+        analysis_path = os.path.join(self.cache_path, analysis_filename)
+        if not os.path.exists(analysis_path):
+            analysis = analyze_article(txt_path)
+            with open(analysis_path, 'w') as fh:
+                json.dump(analysis, fh, indent=2)
+        return analysis_path
 
     def load_xref_data(self):
         filename = self.format_filename('xref.json')
@@ -175,10 +186,13 @@ def resolve_doi(doi, preprint_cutoff=10):
 # Example usage
 if __name__ == "__main__":
     from pprint import pprint
+    doi = sys.argv[1]
+    doi_obj = resolve_doi(doi)
+    text_path = doi_obj.analyze_article()
+    pprint(json.loads(open(text_path).read()))
     #doi = "https://doi.org/10.1101/2023.12.12.571258"
     #doi = "https://doi.org/10.1101/460345"
     #doi = "https://doi.org/10.1093/bioinformatics/btac729"
-    doi = "https://doi.org/10.1101/2022.04.21.488948"
-    doi_obj = resolve_doi(doi)
-    doi_obj.download_pdf()
-    text_path = doi_obj.extract_text()
+    #doi = "https://doi.org/10.1101/2022.04.21.488948"
+    #doi_obj.download_pdf()
+    #text_path = doi_obj.extract_text()
