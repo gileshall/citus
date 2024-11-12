@@ -1,7 +1,9 @@
 import os
 import re
 import json
+import sys
 import requests
+import doi2pdf
 from urllib.parse import urlparse
 from functools import wraps
 from crossref import restful as xref
@@ -29,11 +31,15 @@ class DOIReference:
             raise ValueError("Invalid DOI input, must contain '/' to separate prefix and suffix")
 
     @property
+    def stem(self):
+        return f"{self._prefix}/{self._suffix}"
+
+    @property
     def url(self):
-        """
-        Construct the full DOI URL from prefix and suffix.
-        """
-        return f"https://doi.org/{self._prefix}/{self._suffix}"
+        return f"https://doi.org/{self.stem}"
+    
+    def __str__(self):
+        return self.url
 
     @property
     def prefix(self):
@@ -61,7 +67,7 @@ class DOI:
             return f"{self.doi_reference.prefix}_{suffix}_{stem}"
         return f"{self.doi_reference.prefix}_{suffix}{stem}"
 
-    def get_link_to_paper(self):
+    def get_links_to_paper(self):
         def sort_key(link):
             pdf_priority = 1 if link['content-type'] == 'application/pdf' else 0
             vor_priority = 1 if link['content-version'] == 'vor' else 0
@@ -74,16 +80,32 @@ class DOI:
             msg = f"Could not find a paper link for {self.doi_reference}"
             raise ValueError(msg)
 
-        paper_link = link_list[0]
-        return paper_link['URL']
+        return link_list
 
     def download_pdf(self):
-        paper_url = self.get_link_to_paper()
         pdf_filename = self.format_filename('.pdf')
         pdf_path = os.path.join(self.cache_path, pdf_filename)
         if os.path.exists(pdf_path):
             return pdf_path
 
+        if self.download_pdf_method_one(pdf_path):
+            return pdf_path
+
+        if self.download_pdf_method_two(pdf_path):
+            return pdf_path
+
+        msg = f"Failed to download PDF for {self.doi_reference}."
+        raise ValueError(msg)
+
+    def download_pdf_method_two(self, pdf_path):
+        try:
+            doi2pdf.doi2pdf(self.doi_reference.stem, output=pdf_path)
+            return pdf_path
+        except doi2pdf.main.NotFoundError:
+            pass
+
+
+    def download_pdf_method_one(self, pdf_path):
         # Headers to make the request look like it's coming from a desktop browser
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -91,17 +113,16 @@ class DOI:
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://academic.oup.com/"
         }
+        links = self.get_links_to_paper()
+        for link in links:
+            paper_url = link['URL']
+            resp = requests.get(paper_url, headers=headers, allow_redirects=True)
+            if resp.status_code != 200:
+                continue
 
-        # XXX: try different versions if this doesn't work?
-        resp = requests.get(paper_url, headers=headers, allow_redirects=True)
-        if resp.status_code != 200:
-            msg = f"Failed to download PDF at {url}. Status code: {response.status_code}"
-            raise ValueError(msg)
-
-        with open(pdf_path, "wb") as fh:
-            fh.write(resp.content)
-
-        return pdf_path
+            with open(pdf_path, "wb") as fh:
+                fh.write(resp.content)
+            return pdf_path
 
     def extract_text(self):
         pdf_path = self.download_pdf()
@@ -190,9 +211,3 @@ if __name__ == "__main__":
     doi_obj = resolve_doi(doi)
     text_path = doi_obj.analyze_article()
     pprint(json.loads(open(text_path).read()))
-    #doi = "https://doi.org/10.1101/2023.12.12.571258"
-    #doi = "https://doi.org/10.1101/460345"
-    #doi = "https://doi.org/10.1093/bioinformatics/btac729"
-    #doi = "https://doi.org/10.1101/2022.04.21.488948"
-    #doi_obj.download_pdf()
-    #text_path = doi_obj.extract_text()

@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  grobid:
+    image: lfoppiano/grobid:latest-crf-multi-arch
+    volumes:
+      - ./config/grobid/grobid.yaml:/opt/grobid/grobid-home/config/grobid.yaml:ro
+    ports:
+      - "8070:8070"
+    platform: linux/amd64
