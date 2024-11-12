@@ -4,6 +4,14 @@ import xml.etree.ElementTree as ET
 # Define the TEI namespace
 ns = {'tei': 'http://www.tei-c.org/ns/1.0'}
 
+# Define default sections order
+DEFAULT_SECTIONS_ORDER = (
+  'title', 'authors', 'abstract',
+  'body', 'references', 'funding',
+  'publisher', 'license',
+  'data_sources', 'article_status'
+)
+
 def get_title(root):
     title = root.find('.//tei:titleStmt/tei:title[@type="main"]', ns)
     return f"# {title.text.strip()}\n" if title is not None and title.text else "# Untitled\n\n"
@@ -54,8 +62,8 @@ def get_abstract(root):
         abstract_text = ""
         for element in abstract.iter():
             if element.tag == f"{{{ns['tei']}}}ref":
-                ref_number = element.get("target", "").lstrip("#b") if element.get("target") else ""
-                abstract_text += f"[{ref_number}]"
+                ref_content = element.text if element.text else ""
+                abstract_text += ref_content
             elif element.text:
                 abstract_text += element.text
             if element.tail:
@@ -71,13 +79,13 @@ def get_body(root):
             section_title = div.find('tei:head', ns)
             if section_title is not None and section_title.text:
                 output += f"### {section_title.text.strip()}\n\n"
-            
+
             for paragraph in div.findall('tei:p', ns):
                 paragraph_text = ""
                 for element in paragraph.iter():
                     if element.tag == f"{{{ns['tei']}}}ref":
-                        ref_number = element.get("target", "").lstrip("#b") if element.get("target") else ""
-                        paragraph_text += f"[{ref_number}]"
+                        ref_content = element.text if element.text else ""
+                        paragraph_text += ref_content
                     elif element.text:
                         paragraph_text += element.text
                     if element.tail:
@@ -148,35 +156,47 @@ def get_article_status(root):
     status = root.find('.//tei:sourceDesc/tei:biblStruct/tei:note[@type="submission"]', ns)
     return f"## Article Status\n\n{status.text.strip()}\n\n" if status is not None and status.text else ""
 
-def convert_tei_to_text(file_path, output_path=None):
+SECTION_FUNCTIONS = {
+    'title': get_title,
+    'authors': get_authors,
+    'abstract': get_abstract,
+    'body': get_body,
+    'references': get_references,
+    'funding': get_funding,
+    'publisher': get_publisher,
+    'license': get_license,
+    'data_sources': get_data_sources,
+    'article_status': get_article_status,
+}
+
+def convert_tei_to_text(file_path, output_path=None, sections_order=None):
+    sections_order = sections_order or DEFAULT_SECTIONS_ORDER
+
+    # Ensure all requested sections are recognized
+    for section in sections_order:
+        if section not in SECTION_FUNCTIONS:
+            raise ValueError(f"Unknown section: {section}")
+
     output_path = output_path or f"{file_path}.txt"
 
     # Parse the XML file
     tree = ET.parse(file_path)
     root = tree.getroot()
 
-    # Collect all sections
+    # Collect all requested sections
     output = ""
-    output += get_title(root)
-    output += get_authors(root)
-    output += get_abstract(root)
-    output += get_body(root)
-    #output += get_references(root)
-    output += get_funding(root)
-    output += get_publisher(root)
-    output += get_license(root)
-    output += get_data_sources(root)
-    output += get_article_status(root)
+    for section in sections_order:
+        output += SECTION_FUNCTIONS[section](root)
     
-    # Print the complete output
     with open(output_path, 'w') as fh:
         fh.write(output)
 
     return output
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python extract_tei_full_text.py <filename> [output]")
+    if len(sys.argv) != 2:
+        print("Usage: python extract_tei_full_text.py <filename>")
     else:
-        args = sys.argv[1:3]
-        print(convert_tei_to_text(*args))
+        file_path = sys.argv[1]
+        txt = convert_tei_to_text(file_path)
+        print(txt)

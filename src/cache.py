@@ -9,8 +9,16 @@ from urllib.parse import urlparse
 from functools import wraps
 from crossref import restful as xref
 from grobid import extract_text
-from tei import convert_tei_to_text
+from tei import convert_tei_to_text, DEFAULT_SECTIONS_ORDER
 from analysis import analyze_article
+
+# when we convert the article to text for LLM analysis
+# we leave out 'authors' and 'references'
+# because they take up a lot of tokens, but do not add a lot of information
+
+ARTICLE_SECTION_ORDERING = list(DEFAULT_SECTIONS_ORDER)
+del ARTICLE_SECTION_ORDERING[ARTICLE_SECTION_ORDERING.index('authors')]
+del ARTICLE_SECTION_ORDERING[ARTICLE_SECTION_ORDERING.index('references')]
 
 class DOIReference:
     def __init__(self, doi_input):
