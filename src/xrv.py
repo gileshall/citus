@@ -1,3 +1,4 @@
+import argparse
 import requests
 from urllib.parse import urlencode, quote
 import re
@@ -40,7 +41,6 @@ def generate_biorxiv_url(params=None, page=1):
 
 def extract_dois_from_html(html):
     # Regular expression to find DOI URIs in the HTML
-    # https://stackoverflow.com/questions/27910/finding-a-doi-in-a-document-or-page
     doi_pattern = r'https://doi\.org/10\.\d{4,9}/[\w\.\-]+(?:/[\w\.\-]+)?'
     dois = re.findall(doi_pattern, html)
     return dois
@@ -78,19 +78,32 @@ def date_range_iterator(start_date='1970-01-01', end_date=None, interval=None):
     
     # Default interval is the entire range if none is provided
     if interval is None:
-        interval = (end - start).days
-    
-    delta = timedelta(days=interval)
-    current_start = start
+        yield (start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'))
+    else:
+        delta = timedelta(days=interval)
+        current_start = start
 
-    while current_start < end:
-        current_end = min(current_start + delta, end)
-        yield (current_start.strftime('%Y-%m-%d'), current_end.strftime('%Y-%m-%d'))
-        current_start = current_end
+        while current_start < end:
+            current_end = min(current_start + delta, end)
+            yield (current_start.strftime('%Y-%m-%d'), current_end.strftime('%Y-%m-%d'))
+            current_start = current_end
+
+def main():
+    parser = argparse.ArgumentParser(description="Search BioRxiv for articles and extract DOIs.")
+    parser.add_argument('--query', type=str, required=True, help='Search query term.')
+    parser.add_argument('--start_date', type=str, default='1970-01-01', help='Start date in YYYY-MM-DD format (default: %(default)s).')
+    parser.add_argument('--end_date', type=str, default=datetime.today().strftime('%Y-%m-%d'), help='End date in YYYY-MM-DD format (default: %(default)s).')
+    parser.add_argument('--interval', type=int, help='Interval in days for splitting the date range (default: entire range).')
+    args = parser.parse_args()
+
+    # Iterate through date ranges and extract DOIs for each range
+    for start, end in date_range_iterator(start_date=args.start_date, end_date=args.end_date, interval=args.interval):
+        print(f"Searching from Start Date: {start} to End Date: {end}")
+        try:
+            dois = list(search_biorxiv_and_extract_dois(args.query, limit_from=start, limit_to=end))
+            print(f"DOIs found: {dois}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 if __name__ == '__main__':
-    # Example usage of date_range_iterator for the first three months of January 2023, week by week
-    for start, end in date_range_iterator(start_date='2023-01-01', end_date='2023-03-31', interval=7):
-        print(f"Start Date: {start}, End Date: {end}")
-        dois = list(search_biorxiv_and_extract_dois('gatk', limit_from=start, limit_to=end))
-        print(f"DOIs found: {dois}")
+    main()

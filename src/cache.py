@@ -2,6 +2,7 @@ import os
 import re
 import json
 import sys
+import logging
 import requests
 import doi2pdf
 from urllib.parse import urlparse
@@ -60,6 +61,20 @@ class DOI:
         if not os.path.exists(self.cache_path):
             os.makedirs(self.cache_path)
 
+        # Set up logging specific to this module
+        log_filename = os.path.join(self.cache_path, 'process.log')
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        file_handler = logging.FileHandler(log_filename)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(stream_handler)
+        self.logger.propagate = False
+        
+        self.logger.info(f"Initialized DOI object for {self.doi_reference}")
+
     def format_filename(self, stem):
         suffix = self.doi_reference.suffix.split('/')
         suffix = '_'.join(suffix)
@@ -78,32 +93,39 @@ class DOI:
         link_list = sorted(link_list, key=sort_key, reverse=True)
         if not link_list:
             msg = f"Could not find a paper link for {self.doi_reference}"
+            self.logger.error(msg)
             raise ValueError(msg)
 
+        self.logger.info(f"Found {len(link_list)} links to paper for {self.doi_reference}")
         return link_list
 
     def download_pdf(self):
         pdf_filename = self.format_filename('.pdf')
         pdf_path = os.path.join(self.cache_path, pdf_filename)
         if os.path.exists(pdf_path):
+            self.logger.info(f"PDF already exists at {pdf_path}")
             return pdf_path
 
         if self.download_pdf_method_one(pdf_path):
+            self.logger.info(f"Downloaded PDF using method one for {self.doi_reference}")
             return pdf_path
 
         if self.download_pdf_method_two(pdf_path):
+            self.logger.info(f"Downloaded PDF using method two for {self.doi_reference}")
             return pdf_path
 
         msg = f"Failed to download PDF for {self.doi_reference}."
+        self.logger.error(msg)
         raise ValueError(msg)
 
     def download_pdf_method_two(self, pdf_path):
         try:
             doi2pdf.doi2pdf(self.doi_reference.stem, output=pdf_path)
+            self.logger.info(f"Successfully downloaded PDF using doi2pdf for {self.doi_reference}")
             return pdf_path
         except doi2pdf.main.NotFoundError:
-            pass
-
+            self.logger.warning(f"doi2pdf method failed for {self.doi_reference}")
+            return None
 
     def download_pdf_method_one(self, pdf_path):
         # Headers to make the request look like it's coming from a desktop browser
@@ -118,43 +140,58 @@ class DOI:
             paper_url = link['URL']
             resp = requests.get(paper_url, headers=headers, allow_redirects=True)
             if resp.status_code != 200:
+                self.logger.warning(f"Failed to download from {paper_url} with status code {resp.status_code}")
                 continue
 
             with open(pdf_path, "wb") as fh:
                 fh.write(resp.content)
+            self.logger.info(f"Successfully downloaded PDF from {paper_url}")
             return pdf_path
 
     def extract_text(self):
         pdf_path = self.download_pdf()
         tei_filename = self.format_filename('.tei.xml')
         tei_path = os.path.join(self.cache_path, tei_filename)
+        self.logger.info(f"Extracting text to TEI format at {tei_path}")
         extract_text(pdf_path, tei_path)
         txt_filename = self.format_filename('.txt')
         txt_path = os.path.join(self.cache_path, txt_filename)
+        self.logger.info(f"Converting TEI to plain text at {txt_path}")
         convert_tei_to_text(tei_path, txt_path)
         return txt_path
     
     def analyze_article(self):
-        txt_path = self.extract_text()
-        analysis_filename = self.format_filename('analysis.json')
-        analysis_path = os.path.join(self.cache_path, analysis_filename)
-        if not os.path.exists(analysis_path):
-            analysis = analyze_article(txt_path)
-            with open(analysis_path, 'w') as fh:
-                json.dump(analysis, fh, indent=2)
-        return analysis_path
+        try:
+            txt_path = self.extract_text()
+            analysis_filename = self.format_filename('analysis.json')
+            analysis_path = os.path.join(self.cache_path, analysis_filename)
+            if not os.path.exists(analysis_path):
+                self.logger.info(f"Analyzing article text at {txt_path}")
+                analysis = analyze_article(txt_path)
+                with open(analysis_path, 'w') as fh:
+                    json.dump(analysis, fh, indent=2)
+                self.logger.info(f"Analysis saved to {analysis_path}")
+            else:
+                self.logger.info(f"Analysis already exists at {analysis_path}")
+            return analysis_path
+        except Exception as e:
+            self.logger.error(f"Exception occurred during analyze_article: {str(e)}", exc_info=True)
+            raise
 
     def load_xref_data(self):
         filename = self.format_filename('xref.json')
         filepath = os.path.join(self.cache_path, filename)
         if os.path.exists(filepath):
+            self.logger.info(f"Loading cached Crossref data from {filepath}")
             with open(filepath, 'r') as fh:
                 info = json.load(fh)
         else:
+            self.logger.info(f"Fetching Crossref data for {self.doi_reference.url}")
             work = xref.Works()
             info = work.doi(self.doi_reference.url)
             with open(filepath, 'w') as fh:
                 json.dump(info, fh, indent=2)
+            self.logger.info(f"Crossref data saved to {filepath}")
         return info
 
     @property
@@ -164,18 +201,18 @@ class DOI:
         return self._xref
     
     def is_preprint_of(self):
-        #{'is-preprint-of': [{'asserted-by': 'subject',
-         # 'id': '10.1093/bioinformatics/btac729',
-         #'id-type': 'doi'}]}
         if 'relation' in self.xref:
             if 'is-preprint-of' in self.xref['relation']:
                 ppo = self.xref['relation']['is-preprint-of']
                 if len(ppo) > 1:
                     msg = f'is_preprint_of() multiple successors for {self.doi_reference.url}: {ppo}'
+                    self.logger.error(msg)
                     raise ValueError(msg)
                 if ppo[0]['id-type'] != 'doi':
                     msg = f'is_preprint_of(): non doi ID {self.doi_reference.url}: {ppo}'
+                    self.logger.error(msg)
                     raise ValueError(msg)
+                self.logger.info(f"DOI {self.doi_reference.url} is a preprint of {ppo[0]['id']}")
                 return ppo[0]['id']
 
 class DOIFactory:
