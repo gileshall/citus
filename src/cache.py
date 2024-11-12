@@ -7,6 +7,8 @@ import requests
 import doi2pdf
 from urllib.parse import urlparse
 from functools import wraps
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 from crossref import restful as xref
 from grobid import extract_text
 from tei import convert_tei_to_text, DEFAULT_SECTIONS_ORDER
@@ -19,6 +21,13 @@ from analysis import analyze_article
 ARTICLE_SECTION_ORDERING = list(DEFAULT_SECTIONS_ORDER)
 del ARTICLE_SECTION_ORDERING[ARTICLE_SECTION_ORDERING.index('authors')]
 del ARTICLE_SECTION_ORDERING[ARTICLE_SECTION_ORDERING.index('references')]
+
+def validate_pdf(filepath):
+    try:
+        PdfReader(filepath)
+    except PdfReadError:
+        return False
+    return True
 
 class DOIReference:
     def __init__(self, doi_input):
@@ -71,13 +80,13 @@ class DOI:
 
         # Set up logging specific to this module
         log_filename = os.path.join(self.cache_path, 'process.log')
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.doi_reference.stem)
         self.logger.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler(log_filename)
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        self.logger.addHandler(file_handler)
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-        self.logger.addHandler(file_handler)
         self.logger.addHandler(stream_handler)
         self.logger.propagate = False
         
@@ -129,6 +138,10 @@ class DOI:
     def download_pdf_method_two(self, pdf_path):
         try:
             doi2pdf.doi2pdf(self.doi_reference.stem, output=pdf_path)
+            if not validate_pdf(pdf_path):
+                os.unlink(pdf_path)
+                self.logger.warning(f"Failed to download actual PDF with doi2pdf")
+                return None
             self.logger.info(f"Successfully downloaded PDF using doi2pdf for {self.doi_reference}")
             return pdf_path
         except doi2pdf.main.NotFoundError:
@@ -141,7 +154,7 @@ class DOI:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Accept": "application/pdf",
             "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://academic.oup.com/"
+            #"Referer": "https://academic.oup.com/"
         }
         links = self.get_links_to_paper()
         for link in links:
@@ -153,6 +166,10 @@ class DOI:
 
             with open(pdf_path, "wb") as fh:
                 fh.write(resp.content)
+            if not validate_pdf(pdf_path):
+                os.unlink(pdf_path)
+                self.logger.warning(f"Failed to download actual PDF from {paper_url}")
+                continue
             self.logger.info(f"Successfully downloaded PDF from {paper_url}")
             return pdf_path
 
@@ -175,7 +192,7 @@ class DOI:
             analysis_path = os.path.join(self.cache_path, analysis_filename)
             if not os.path.exists(analysis_path):
                 self.logger.info(f"Analyzing article text at {txt_path}")
-                analysis = analyze_article(txt_path)
+                analysis = analyze_article(txt_path, self.xref)
                 with open(analysis_path, 'w') as fh:
                     json.dump(analysis, fh, indent=2)
                 self.logger.info(f"Analysis saved to {analysis_path}")

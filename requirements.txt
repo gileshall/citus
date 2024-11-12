@@ -3,3 +3,4 @@ doi2pdf
 crossrefapi
 grobid-client
 openai
+pypdf
