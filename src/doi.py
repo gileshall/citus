@@ -16,6 +16,10 @@ from tei import convert_tei_to_text, DEFAULT_SECTIONS_ORDER
 from persist import PersistentDict
 from analysis import analyze_article
 from __init__ import __version__
+from colorama import Fore, Style, init
+
+# Initialize colorama
+init(autoreset=True)
 
 # when we convert the article to text for LLM analysis
 # we leave out 'authors' and 'references'
@@ -49,7 +53,7 @@ class DOIReference:
             parts = doi_input.split('/')
             return (parts[0], '/'.join(parts[1:]))
         else:
-            raise ValueError("Invalid DOI input, must contain '/' to separate prefix and suffix")
+            raise ValueError(f"Invalid DOI input '{doi_input}', must contain '/' to separate prefix and suffix")
 
     @property
     def stem(self):
@@ -92,15 +96,31 @@ class DOI:
         self.logger = logging.getLogger(self.doi.stem)
         if not self.logger.hasHandlers():
             self.logger.setLevel(logging.DEBUG)
+            
+            # File handler without colors
             file_handler = logging.FileHandler(log_filename)
             file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
             self.logger.addHandler(file_handler)
+            
+            # Stream handler with colors
             stream_handler = logging.StreamHandler()
-            stream_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+            stream_handler.setFormatter(self.ColoredFormatter())
             self.logger.addHandler(stream_handler)
+            
             self.logger.propagate = False
         
         self.logger.info(f"Initialized DOI object for {self.doi}")
+
+    class ColoredFormatter(logging.Formatter):
+        def format(self, record):
+            log_fmt = (
+                f"{Fore.GREEN}%(asctime)s{Style.RESET_ALL} - "
+                f"{Fore.CYAN}%(name)s{Style.RESET_ALL} - "
+                f"{Fore.YELLOW}%(levelname)s{Style.RESET_ALL} - "
+                f"{Fore.WHITE}%(message)s{Style.RESET_ALL}"
+            )
+            formatter = logging.Formatter(log_fmt)
+            return formatter.format(record)
 
     def format_filename(self, stem):
         suffix = self.doi.suffix.split('/')
@@ -259,6 +279,9 @@ class DOI:
         return self.extract_body_from_tei()
 
     def analyze_article(self):
+        if not self.is_published:
+            self.logger.info(f"{self.doi.stem} is not published, skipping analysis")
+            return None
         try:
             txt_path = self.extract_text()
             analysis_filename = self.format_filename('analysis.json')
@@ -371,10 +394,12 @@ class DOI:
         return self._status
 
 class DOIFactory:
-    def __init__(self, base_path='./doi-cache'):
-        self.base_path = base_path
-        if not os.path.exists(self.base_path):
-            os.makedirs(self.base_path)
+    DefaultBaseCachePath = "./doi-cache"
+
+    def __init__(self, base_cache_path=None):
+        self.base_cache_path = base_cache_path or self.DefaultBaseCachePath
+        if not os.path.exists(self.base_cache_path):
+            os.makedirs(self.base_cache_path)
 
     def create_doi(self, doi, **kw):
         doi = DOIReference(doi)
@@ -384,10 +409,10 @@ class DOIFactory:
     def _get_cache_directory(self, doi):
         suffix = doi.suffix.split('/')
         suffix = '_'.join(suffix)
-        return os.path.join(self.base_path, doi.prefix, suffix)
+        return os.path.join(self.base_cache_path, doi.prefix, suffix)
 
-def resolve_doi(doi, preprint_cutoff=10):
-    factory = DOIFactory()
+def resolve_doi(doi, preprint_cutoff=10, cache_path=None):
+    factory = DOIFactory(base_cache_path=cache_path)
     preprint_doi = None
     for level in range(preprint_cutoff):
         doi_obj = factory.create_doi(doi, preprint_doi=preprint_doi)
