@@ -1,6 +1,4 @@
-# README
-
-## Overview
+![citus logo](https://raw.githubusercontent.com/gileshall/citus/refs/heads/main/media/citus.jpg)
 
 This repository contains tools and methodologies for analyzing scientific articles, specifically focusing on those related to genomic analysis and bioinformatics. The main objective is to assess the usage of tools like the Genome Analysis Toolkit (GATK), Picard, Integrative Genomics Viewer (IGV), and HTSJDK within the context of scientific publications. 
 
