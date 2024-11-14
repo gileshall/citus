@@ -3,7 +3,6 @@ import logging
 import multiprocessing
 import queue
 import time
-import threading
 import colorama
 from doi import resolve_doi
 import rxiv
@@ -48,29 +47,36 @@ class DOIWorker(multiprocessing.Process):
         super().__init__()
         self.doi_queue = doi_queue
         self.running_event = running_event
-        self.current_thread = None
         self.cache_path = cache_path
 
     def run(self):
         logger.info(f"⭐ Worker {self.name} has started!")
         while self.running_event.is_set():
             try:
-                #logger.info(f"🔄 Worker {self.name} waiting for work...")
                 doi = self.doi_queue.get(timeout=1)  # Get DOI from the queue with a timeout
                 logger.info(f"🔍 Worker {self.name} got DOI: {doi}")
                 
-                # Run DOI processing in a separate thread
-                self.current_thread = threading.Thread(target=self.process_doi, args=(doi,))
-                self.current_thread.start()
-                self.current_thread.join()
+                # Run DOI processing in a separate process
+                process = multiprocessing.Process(target=self.process_doi, args=(doi,))
+                process.start()
+                while process.is_alive():
+                    process.join(timeout=0.5)
+                    if not self.running_event.is_set():
+                        logger.warning(f"🛑 Worker {self.name} stopping process for DOI: {doi} due to system stop signal...")
+                        process.terminate()
+                        process.join()
+                        break
 
-                logger.info(f"✅ Worker {self.name} finished processing DOI: {doi}")
+                if process.exitcode == 0:
+                    logger.info(f"✅ Worker {self.name} finished processing DOI: {doi}")
+                else:
+                    logger.error(f"❌ Worker {self.name} failed to process DOI: {doi}")
+
                 self.doi_queue.task_done()
             except queue.Empty:
                 if not self.running_event.is_set():
-                    logger.info(f"🛑 Worker {self.name} stopping due to system stop signal...")
+                    logger.info(f"🚯 Worker {self.name} stopping due to system stop signal...")
                     break
-                #logger.info(f"🛑 Worker {self.name} no more DOIs to process. Waiting...")
 
     def process_doi(self, doi):
         try:
@@ -84,7 +90,6 @@ def run_workers(doi_queue, num_workers, running_event, cache_path):
     workers = []
     for _ in range(num_workers):
         worker = DOIWorker(doi_queue, running_event, cache_path)
-        worker.daemon = True
         worker.start()
         workers.append(worker)
     return workers
@@ -122,7 +127,7 @@ def process_dois(query, num_workers, start_date, end_date, interval, cache_path)
 
         for doi in dois:
             doi_queue.put(doi)
-            logger.info(f"🛅 DOI added: {doi}")
+            logger.info(f"🛥 DOI added: {doi}")
 
     try:
         doi_queue.join()  # Block until all tasks are done
@@ -131,8 +136,6 @@ def process_dois(query, num_workers, start_date, end_date, interval, cache_path)
         logger.info("✅ Stopping all workers...")
         running_event.clear()  # Signal all workers to stop
         for worker in workers:
-            if worker.current_thread and worker.current_thread.is_alive():
-                worker.current_thread.join()
             worker.join()
         logger.info("✅ All workers have been stopped.")
 
@@ -153,7 +156,7 @@ def main():
     try:
         process_dois(args.query, args.num_workers, args.start_date, args.end_date, args.interval, args.cache_path)
     except KeyboardInterrupt:
-        logger.warning("🛑 Process interrupted by user.")
+        logger.warning("🚯 Process interrupted by user.")
     finally:
         logger.info("👋 Exiting the program.")
 

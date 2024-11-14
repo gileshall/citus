@@ -15,12 +15,13 @@ class PersistentDict:
 
     def _write_to_file(self, data):
         # Create a temporary file and write JSON data
-        with tempfile.NamedTemporaryFile('w', delete=False) as temp_file:
-            json.dump(data, temp_file, indent=4)
-            temp_file.flush()
+        tmpfn = self.filepath + '_'
+        with open(tmpfn, 'w') as tempfh:
+            json.dump(data, tempfh, indent=4)
+            tempfh.flush()
         # Rename temp file to target file path
         os.sync()
-        os.replace(temp_file.name, self.filepath)
+        os.replace(tmpfn, self.filepath)
 
     def __getitem__(self, key):
         data = self._read_from_file()
