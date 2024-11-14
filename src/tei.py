@@ -169,11 +169,11 @@ SECTION_FUNCTIONS = {
     'article_status': get_article_status,
 }
 
-def convert_tei_to_text(file_path, output_path=None, sections_order=None):
-    sections_order = sections_order or DEFAULT_SECTIONS_ORDER
+def convert_tei_to_text(file_path, output_path=None, section_order=None):
+    section_order = section_order or DEFAULT_SECTIONS_ORDER
 
     # Ensure all requested sections are recognized
-    for section in sections_order:
+    for section in section_order:
         if section not in SECTION_FUNCTIONS:
             raise ValueError(f"Unknown section: {section}")
 
@@ -185,7 +185,7 @@ def convert_tei_to_text(file_path, output_path=None, sections_order=None):
 
     # Collect all requested sections
     output = ""
-    for section in sections_order:
+    for section in section_order:
         output += SECTION_FUNCTIONS[section](root)
     
     with open(output_path, 'w') as fh:

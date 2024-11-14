@@ -1,177 +1,188 @@
-**Task**: Analyze the following scientific article to assess the usage of the Genome Analysis Toolkit (GATK). Determine if GATK is mentioned or used, analyze its utilization, evaluate the study's scientific impact, and assess if the article is open access. Output the findings as structured JSON for statistical analysis.
+**Task**: Analyze the provided scientific article to assess the usage of the Genome Analysis Toolkit (GATK), Picard, Integrative Genomics Viewer (IGV), and HTSJDK. Determine if these tools are mentioned or used, analyze their utilization, evaluate the study's scientific impact, assess if the article is related to mitochondria or long-read technology, and whether the article is open access. Output the findings as structured JSON for statistical analysis, using a hierarchical schema for naturally nested information.
 
 ---
 
 **Instructions**:
 
-1. **GATK Relevance**:
+1. **Tool Relevance**:
 
-   - Set `"gatk_related": true` if GATK is mentioned or used; else, `"gatk_related": false`.
-   - If `"gatk_related": false`, fill the JSON with "Not applicable" or best-fitting options.
+   - **GATK**:
+     - `"gatk_related": true` if GATK is mentioned or used; else, `false`.
+     - If `false`, fill GATK-related sections with "Not applicable" or best-fitting options.
+
+   - **Picard**:
+     - `"picard_related": true` if Picard is mentioned or used; else, `false`.
+     - If `false`, fill Picard-related sections with "Not applicable" or best-fitting options.
+
+   - **IGV**:
+     - `"igv_related": true` if IGV is mentioned or used; else, `false`.
+     - If `false`, fill IGV-related sections with "Not applicable" or best-fitting options.
+
+   - **HTSJDK**:
+     - `"htsjdk_related": true` if HTSJDK is mentioned or used; else, `false`.
+     - If `false`, fill HTSJDK-related sections with "Not applicable" or best-fitting options.
 
 2. **Core Information**:
 
    - **Paper Type**: Choose one:
-     - "Tool paper"
-     - "Research paper"
-     - "Review paper"
-     - "Tutorial"
-     - "Other"
-
-   - **GATK's Role**: Choose one:
-     - "Main focus"
-     - "Comparison point"
-     - "Part of analysis pipeline"
-     - "Mentioned but not used"
-     - "Not applicable"
-     - Include `"gatk_role_note"` if explanation is needed.
+     - `"paper_type": "Tool"`, `"Research"`, `"Review"`, `"Tutorial"`, `"Benchmark"`, `"Protocol"`, `"Other"`
 
    - **Scientific Impact** (1–5):
-     - 1: Minor contribution
-     - 2: Limited
-     - 3: Notable advancement
-     - 4: Field-changing
-     - 5: Breakthrough
+     - `"scientific_impact": 1` (Minor contribution)
+     - `"scientific_impact": 2` (Limited)
+     - `"scientific_impact": 3` (Notable advancement)
+     - `"scientific_impact": 4` (Field-changing)
+     - `"scientific_impact": 5` (Breakthrough)
      - Provide `"scientific_impact_note"` explaining the rating.
 
    - **Methodological Details**:
-     - List methodologies involving GATK using suggested terms:
+     - `"methodological_details"`: List methodologies using suggested terms in an array.
+     - Suggested terms:
        - "Variant calling", "Imputation", "Data preprocessing", "Quality control", "Comparative analysis", "Assembly", "Phasing", "Population structure analysis", "Functional annotation", "Structural variant detection"
-     - Use an array format, e.g., `["Variant calling", "Imputation"]`.
      - Add `"methodological_details_note"` if needed.
 
    - **Species Used**:
-     - List species names in an array, or `["Not applicable"]`.
+     - `"species_used"`: List species names in an array, or `["Not applicable"]`.
 
    - **Sample Size** (1–5):
-     - 1: Very small (<20 samples)
-     - 2: Small (20–100 samples)
-     - 3: Moderate (101–1,000 samples)
-     - 4: Large (1,001–10,000 samples)
-     - 5: Massive (>10,000 samples)
+     - `"sample_size": 1` (Very small, <20 samples)
+     - `"sample_size": 2` (Small, 20–100 samples)
+     - `"sample_size": 3` (Moderate, 101–1,000 samples)
+     - `"sample_size": 4` (Large, 1,001–10,000 samples)
+     - `"sample_size": 5` (Massive, >10,000 samples)
      - Include `"sample_size_note"` with details.
 
    - **Comparison with Other Tools**:
-     - `true` or `false`.
+     - `"comparison_with_other_tools": true` or `false`.
      - Include `"comparison_with_other_tools_note"` listing other tools if applicable.
+     - If comparisons or benchmarks are present, include `"comparison_sets"`: List of lists, each inner list representing a comparison set.
 
-   - **Results Summary**:
-     - "Positive for GATK"
-     - "Neutral"
-     - "Negative for GATK"
-     - "Not applicable"
-     - Provide `"results_summary_note"` elaborating on findings.
+   - **Results Summary for GATK**:
+     - `"results_summary_gatk": "Positive"`, `"Neutral"`, `"Negative"`, `"Not applicable"`
+     - Provide `"results_summary_gatk_note"` elaborating on findings.
 
-3. **Additional Metrics**:
+3. **Tool-Specific Sections**:
 
-   - **GATK Tools Used**:
-     - List specific tools/modules, e.g., `["HaplotypeCaller", "BaseRecalibrator"]`, or `["Not specified"]`.
+   - **For each tool (GATK, Picard, IGV, HTSJDK) that is related (`*_related`: true), include the following:**
 
-   - **GATK Citation**:
-     - `true` if GATK papers are cited; else, `false`.
+     - **Tool Role**:
+       - `"*_role"`: Choose one:
+         - "Main focus", "Comparison point", "Part of analysis pipeline", "Mentioned but not used", "Not applicable"
+       - Include `"*_role_note"` if explanation is needed.
 
-   - **Use of GATK Best Practices**:
-     - `true` or `false`.
-     - Add a note if mentioned.
+     - **Tool Usage Details**:
+       - `"*_tools_used"`: List of dictionaries, each with:
+         - `"tool_name"`: Name of the tool/module.
+         - `"version"`: Version used, or `"Not specified"`.
+         - `"notes"`: Any relevant notes.
+
+     - **Use of Best Practices** (if applicable):
+       - `"use_of_*_best_practices": true` or `false`.
+       - Add `"use_of_*_best_practices_note"` if mentioned.
+
+4. **Additional Metrics**:
 
    - **Biological Application Area**:
-     - Choose one or more:
+     - `"biological_application_area"`: List one or more areas in an array.
+     - Options:
        - "Cancer genomics", "Plant genomics", "Microbial genomics", "Human genetics", "Agricultural genomics", "Other"
-     - Use an array.
 
    - **Type of Data**:
-     - List data types used:
-       - "Whole-genome sequencing", "Exome sequencing", "RNA-Seq", "Metagenomics", "Other"
-     - Use an array.
+     - `"type_of_data"`: List data types used in an array.
+     - Options include but are not limited to:
+       - "Whole-genome sequencing", "Exome sequencing", "RNA-Seq", "ATAC-Seq", "ChIP-Seq", "Metagenomics", "Single-cell sequencing", "Epigenomics", "Other"
 
-4. **Contextual Information**:
+   - **Mitochondria Related**:
+     - `"mitochondria_related": true` if the study is related to mitochondria; else, `false`.
 
-   - **Authors' Affiliations**:
-     - Provide in `"authors_affiliations_note"`.
+   - **Long-Read Technology Related**:
+     - `"long_read_technology_related": true` if the study involves long-read sequencing; else, `false`.
+
+   - **Pipeline Engine**:
+     - `"pipeline_engine"`: Choose one or more:
+       - "WDL", "CWL", "Snakemake", "Ruffus", "Nextflow", "Not applicable", "Other"
+
+5. **Contextual Information**:
 
    - **Publication Date**:
-     - `"publication_year"` (numeric)
-     - `"publication_month"` (1–12)
+     - `"publication_year"`: Numeric value.
+     - `"publication_month"`: Numeric value (1–12).
+
+   - **DOI**:
+     - `"doi"`: Digital Object Identifier of the article.
 
    - **Journal Impact Factor**:
-     - Provide the value or `"Not specified"`.
+     - `"journal_impact_factor"`: Provide the value or `"Not specified"`.
 
    - **Funding Sources**:
-     - List applicable sources:
+     - `"funding_sources"`: List applicable sources in an array.
+     - Options:
        - "Government agency", "Private organization", "Institutional", "International organization", "Other"
-     - Use an array or `["Not applicable"]`.
 
    - **Open Access**:
-     - Set `"open_access": true` if the article is open access; else, `"open_access": false`.
+     - `"open_access": true` if the article is open access; else, `false`.
 
-5. **Technical Context**:
+6. **Technical Context**:
 
    - **Challenges and Limitations**:
-     - Summarize in `"challenges_limitations_note"`.
-
-   - **GATK Version**:
-     - Specify version number or "Not specified".
+     - `"challenges_limitations_note"`: Summarize any mentioned.
 
    - **Other Software Used**:
-     - List other software packages or `["Not applicable"]`.
+     - `"other_software_used"`: List of dictionaries, each with:
+       - `"software_name"`: Name of the software.
+       - `"version"`: Version used, or `"Not specified"`.
+       - `"notes"`: Any relevant notes.
 
    - **Pipeline Integration**:
-     - Choose one:
-       - "Standalone", "Integrated", "Modular", "Not applicable"
-     - Include a note if relevant.
+     - `"pipeline_integration": "Standalone"`, `"Integrated"`, `"Modular"`, `"Not applicable"`
+     - Include `"pipeline_integration_note"` if relevant.
 
    - **Computational Resources**:
-     - Indicate resources used:
+     - `"computational_resources"`: List resources used in an array.
+     - Options:
        - "High-performance computing", "Cloud computing", "Local cluster", "Other"
-     - Use an array.
 
    - **Sequencing Technology**:
+     - `"sequencing_technology"`: List of dictionaries, each with:
+       - `"company_name"`: Name of the sequencer company.
+       - `"machine_model"`: Model name of the sequencer.
+       - `"read_length"`: Read lengths used, or `"Not specified"`.
+       - `"protocol"`: Sequencing protocol used, or `"Not specified"`.
+       - `"notes"`: Any additional information.
 
-     - **Sequencer Companies**:
-       - List the companies, e.g., `["Illumina", "Pacific Biosciences"]`, or `["Not specified"]`.
-
-     - **Machine Models**:
-       - List the models used, e.g., `["HiSeq 2000", "Sequel II"]`, or `["Not specified"]`.
-
-     - **Read Length**:
-       - Specify read lengths used, e.g., `["150 bp"]`, or `["Not specified"]`.
-
-     - **Number of Reads Evaluated**:
-       - Provide the number, or `"Not specified"`.
-
-6. **Impact and Future Research**:
+7. **Impact and Future Research**:
 
    - **User Community Impact** (1–3):
-     - 1: Minimal
-     - 2: Moderate
-     - 3: High
-     - Add a note explaining the rating.
+     - `"user_community_impact": 1` (Minimal)
+     - `"user_community_impact": 2` (Moderate)
+     - `"user_community_impact": 3` (High)
+     - Add `"user_community_impact_note"` explaining the rating.
 
    - **Reproducibility** (1–3):
-     - 1: Low
-     - 2: Moderate
-     - 3: High
-     - Provide context in a note.
+     - `"reproducibility": 1` (Low)
+     - `"reproducibility": 2` (Moderate)
+     - `"reproducibility": 3` (High)
+     - Provide `"reproducibility_note"` with context.
 
    - **Ethical Considerations**:
-     - `true` or `false`.
-     - Add a note if specific considerations are discussed.
+     - `"ethical_considerations": true` or `false`.
+     - Add `"ethical_considerations_note"` if specific considerations are discussed.
 
    - **Future Directions**:
-     - Summarize potential research or applications in a note.
+     - `"future_directions_note"`: Summarize potential research or applications.
 
    - **Study Summary**:
-     - Provide a concise summary in `"summary_of_study_note"`.
+     - `"summary_of_study_note"`: Provide a concise summary.
 
 ---
 
 **Formatting Guidelines**:
 
-- Use the exact JSON structure provided below.
+- Use the exact JSON structure provided.
 - Fields ending with `_note` are for free-text explanations.
 - Omit null or irrelevant fields.
-- Use arrays for fields with multiple values.
-- **Keep all fields at the same level; do not nest any fields.**
+- Use arrays and nested structures for fields with multiple values or detailed information.
+- For tool-specific sections, replace `*` with the tool name in lowercase (e.g., `gatk_role`, `picard_role`).
 - Adhere strictly to specified categories and terms.
 - Ensure consistency and clarity in data representation.
 - Regularly verify compliance with these guidelines.
@@ -183,57 +194,87 @@
 ```json
 {
   "gatk_related": true,
-  "paper_type": "Research paper",
-  "gatk_role": "Part of analysis pipeline",
-  "gatk_role_note": "GATK was used for variant calling in the analysis.",
+  "picard_related": true,
+  "igv_related": false,
+  "htsjdk_related": false,
+  "paper_type": "Benchmark",
   "scientific_impact": 3,
   "scientific_impact_note": "Introduces a notable advancement in cattle genomics.",
   "methodological_details": ["Variant calling", "Data preprocessing"],
-  "methodological_details_note": "Utilized GATK for variant calling and preprocessing steps.",
+  "methodological_details_note": "Utilized GATK and Picard for variant calling and preprocessing steps.",
   "species_used": ["Bos taurus"],
   "sample_size": 4,
   "sample_size_note": "Analyzed data from approximately 3,000 cattle samples.",
   "comparison_with_other_tools": true,
   "comparison_with_other_tools_note": ["DeepVariant", "Samtools"],
-  "results_summary": "Positive for GATK",
-  "results_summary_note": "GATK outperformed other tools in accuracy metrics.",
-  "gatk_tools_used": ["HaplotypeCaller", "BaseRecalibrator"],
-  "gatk_citation": true,
+  "comparison_sets": [
+    ["GATK", "DeepVariant"],
+    ["Picard", "Samtools"]
+  ],
+  "results_summary_gatk": "Positive",
+  "results_summary_gatk_note": "GATK outperformed other tools in accuracy metrics.",
+  "gatk_role": "Part of analysis pipeline",
+  "gatk_role_note": "GATK was used for variant calling in the analysis.",
+  "gatk_tools_used": [
+    {
+      "tool_name": "HaplotypeCaller",
+      "version": "4.2.2.0",
+      "notes": "Used for variant calling."
+    }
+  ],
   "use_of_gatk_best_practices": true,
+  "use_of_gatk_best_practices_note": "Followed GATK Best Practices for data processing.",
+  "picard_role": "Part of analysis pipeline",
+  "picard_role_note": "Picard was used for data preprocessing.",
+  "picard_tools_used": [
+    {
+      "tool_name": "MarkDuplicates",
+      "version": "2.23.8",
+      "notes": "Used to mark PCR duplicates."
+    }
+  ],
   "biological_application_area": ["Agricultural genomics"],
-  "type_of_data": ["Whole-genome sequencing"],
-  "authors_affiliations_note": "ETH Zurich, Switzerland",
+  "type_of_data": ["Whole-genome sequencing", "RNA-Seq"],
+  "mitochondria_related": false,
+  "long_read_technology_related": false,
+  "pipeline_engine": ["Snakemake"],
   "publication_year": 2023,
   "publication_month": 5,
+  "doi": "10.1234/example.doi",
   "journal_impact_factor": 7.5,
   "funding_sources": ["Government agency", "Institutional"],
   "open_access": true,
   "challenges_limitations_note": "High computational demands for processing large datasets.",
-  "gatk_version": "4.2.2.0",
-  "other_software_used": ["DeepVariant", "Samtools"],
+  "other_software_used": [
+    {
+      "software_name": "DeepVariant",
+      "version": "1.0",
+      "notes": "Compared performance with GATK."
+    },
+    {
+      "software_name": "Samtools",
+      "version": "1.9",
+      "notes": "Used for data processing."
+    }
+  ],
   "pipeline_integration": "Integrated",
-  "pipeline_integration_note": "GATK integrated with other tools in the pipeline.",
+  "pipeline_integration_note": "GATK and Picard integrated with other tools in the pipeline.",
   "computational_resources": ["High-performance computing"],
-  "sequencer_companies": ["Illumina"],
-  "machine_models": ["HiSeq 2000"],
-  "read_length": ["150 bp"],
-  "number_of_reads_evaluated": "Not specified",
+  "sequencing_technology": [
+    {
+      "company_name": "Illumina",
+      "machine_model": "HiSeq 2000",
+      "read_length": "150 bp",
+      "protocol": "Paired-end sequencing",
+      "notes": "Used for whole-genome sequencing."
+    }
+  ],
   "user_community_impact": 2,
   "user_community_impact_note": "Expected to influence livestock genomics research.",
   "reproducibility": 3,
   "reproducibility_note": "Data and code are publicly available for replication.",
   "ethical_considerations": false,
   "future_directions_note": "Plans to develop breed-specific genomic panels.",
-  "summary_of_study_note": "Benchmarking of GATK and DeepVariant for cattle genomics, highlighting GATK's superior performance in certain aspects."
+  "summary_of_study_note": "Benchmarking of GATK and Picard for cattle genomics, highlighting their superior performance in certain aspects."
 }
 ```
-
----
-
-**Additional Guidelines**:
-
-- Use specified categories and terms exactly as listed.
-- Provide `_note` explanations for ratings or where context is needed.
-- Ensure all fields are at the same level; do not nest any fields.
-- Ensure consistency and clarity in data representation.
-- Regularly verify compliance with these guidelines.
