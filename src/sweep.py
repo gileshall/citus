@@ -7,9 +7,14 @@ from datetime import datetime
 def get_command_line_arguments():
     parser = argparse.ArgumentParser(description='Consolidate JSON analysis files into a TSV or JSON file.')
     parser.add_argument('-p', '--path', type=str, default='./doi-cache', help='Path to the directory containing JSON files (default: ./doi-cache)')
-    parser.add_argument('-o', '--output', type=str, default='consolidated_analysis_data.tsv', help='Output file name (default: consolidated_analysis_data.tsv)')
+    parser.add_argument('-o', '--output', type=str, help='Output file name (default: consolidated_analysis_data.tsv)')
     parser.add_argument('-f', '--format', type=str, choices=['tsv', 'json'], default='tsv', help='Output file format: tsv or json (default: tsv)')
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.format == 'tsv' and args.output is None:
+        args.output = 'consolidated_analysis_data.tsv'
+    elif args.format == 'json' and args.output is None:
+        args.output = 'consolidated_analysis_data.json'
+    return args
 
 def collect_json_data(input_directory):
     data_list = []
@@ -35,8 +40,8 @@ def collect_json_data(input_directory):
                         if os.path.exists(xref_file_path):
                             with open(xref_file_path, 'r') as xref_file:
                                 xref_data = json.load(xref_file)
-                                data.update(extract_doi_metadata(xref_data))
-
+                                xref_data = extract_doi_metadata(xref_data)
+                                data.update(xref_data)
                         data_list.append(data)
                         file_count += 1
                 except json.JSONDecodeError as e:
@@ -45,11 +50,10 @@ def collect_json_data(input_directory):
 
 def extract_doi_from_path(file_path):
     # Extract DOI from the path structure
-    parts = file_path.split(os.sep)
-    for part in parts:
-        if part.startswith("10."):
-            return part.replace('_', '/').replace('.json', '')
-    return "NA"
+    (rem, _) = os.path.split(file_path)
+    (rem, suffix) = os.path.split(rem)
+    (_, prefix) = os.path.split(rem)
+    return f"{prefix}/{suffix}"
 
 def extract_doi_metadata(doi_metadata, default_value="NA"):
     extracted_data = {
@@ -75,6 +79,20 @@ def extract_doi_metadata(doi_metadata, default_value="NA"):
         # timestamp
         "_created_at": datetime.utcnow().isoformat()
     }
+
+    if 'URL' in doi_metadata:
+        extracted_data['URL'] = doi_metadata.get("URL")
+
+    publish_date = doi_metadata.get("published", {}).get("date-parts", [[]])[0]
+    if len(publish_date) == 3:
+        extracted_data['publication_year'] = publish_date[0]
+        extracted_data['publication_month'] = publish_date[1]
+        extracted_data['publication_day'] = publish_date[2]
+    elif len(publish_date) == 2:
+        extracted_data['publication_year'] = publish_date[0]
+        extracted_data['publication_month'] = publish_date[1]
+    elif len(publish_date) == 1:
+        extracted_data['publication_year'] = publish_date[0]
 
     return extracted_data
 
