@@ -277,4 +277,3 @@
   "future_directions_note": "Plans to develop breed-specific genomic panels.",
   "summary_of_study_note": "Benchmarking of GATK and Picard for cattle genomics, highlighting their superior performance in certain aspects."
 }
-```

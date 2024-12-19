@@ -1,0 +1,236 @@
+**Instructions**:
+
+1. **AoU Relevance**:
+
+   - `"aou_related": true` if the paper mentions or uses AoU data (including AoU infrastructure, protocols, or results).
+   - If `true`, provide details about how AoU data is incorporated.
+   - If `false`, fill AoU-related fields with `"Not applicable"`.
+
+2. **Core Information**:
+
+   - **Paper Type**: Choose one:
+     - `"paper_type": "Research"`, `"Review"`, `"Tool"`, `"Tutorial"`, `"Benchmark"`, `"Protocol"`, `"Other"`
+
+   - **Scientific Impact** (1–5):
+     - 1: Minor contribution
+     - 2: Limited
+     - 3: Notable advancement
+     - 4: Field-changing
+     - 5: Breakthrough
+     - Include `"scientific_impact_note"` to explain the rating.
+
+   - **Scientific Intent**:
+     - `"scientific_intent"`: Choose one or more categories that describe the paper’s primary objective:
+       - "Population health analysis"
+       - "Disease association study"
+       - "Method/analysis development"
+       - "Data resource description"
+       - "Replication/validation study"
+       - "Meta-analysis"
+       - "Policy/ethics discussion"
+       - "Other"
+     - `"scientific_intent_note"`: Add free-text details on the study’s aims.
+
+   - **AoU Role**:
+     - `"aou_role"`: If `aou_related` is true, categorize AoU’s involvement:
+       - "Primary dataset" (AoU data is the main source)
+       - "Secondary dataset" (AoU data complements another dataset)
+       - "Comparison dataset" (AoU data used for benchmarking or comparison)
+       - "Mentioned but not used" (Paper discusses AoU but no data analysis from AoU)
+       - "Other"
+     - `"aou_role_note"`: Provide details on how AoU data/program is integrated into the study.
+
+   - **AoU Data Scope**:
+     - If `aou_related` is true, `"aou_data_scope"`: 
+       - "Genomic data"
+       - "EHR/phenotypic data"
+       - "Both genomic and phenotypic"
+       - "Not specified"
+       - "Other"
+     - `"aou_data_scope_note"`: Explain what aspects of AoU data were used.
+
+   - **Study Population/Demographics**:
+     - `"study_population_note"`: Describe the population studied, including demographics, if applicable.  
+       (For AoU, this might include diversity aspects, though details may vary.)
+
+   - **Comparison with Other Cohorts or Studies**:
+     - `"comparison_with_other_cohorts": true` or `false`.
+     - If `true`, `"comparison_with_other_cohorts_note"`: List or describe other cohorts/studies and how AoU compares.
+     - `"comparison_sets"`: An array of arrays, each inner array listing cohorts or datasets compared.
+
+3. **Data and Methodologies**:
+
+   - **Data Types**:
+     - `"data_types_used"`: List any data types relevant to the study:
+       - "Whole-genome sequencing"
+       - "Exome sequencing"
+       - "RNA-Seq"
+       - "ATAC-Seq"
+       - "ChIP-Seq"
+       - "Metagenomics"
+       - "EHR data"
+       - "Survey data"
+       - "Imaging data"
+       - "Biometric data"
+       - "Other"
+     - `"data_types_note"`: Any clarification about the chosen data types.
+
+   - **Methodological Details**:
+     - `"methodological_details"`: Array of relevant methodologies used:
+       - "Variant calling", "GWAS", "Machine learning", "Quality control", "Comparative analysis", "Population structure analysis", "Functional annotation", "Statistical modeling", "Data integration", "Other"
+     - `"methodological_details_note"`: Additional context on methods.
+
+   - **Software and Tools Used**:
+     - `"software_used"`: List of dictionaries describing software/tools used.
+       - Each dictionary:
+         - `"software_name"`: Name of the software/tool (e.g., "PLINK", "SAIGE", "Hail", "R", "Python", "Bioconductor packages", etc.)
+         - `"version"`: Version, or `"Not specified"`
+         - `"notes"`: Additional info (usage context, purpose)
+     - `"software_used_note"`: Additional context on software usage.
+
+4. **Technical and Infrastructure Details**:
+
+   - **Pipeline/Workflow**:
+     - `"pipeline_engine"`: One or more:
+       - "WDL", "CWL", "Snakemake", "Nextflow", "Not applicable", "Other"
+     - `"pipeline_integration"`: "Standalone", "Integrated", "Modular", "Not applicable"
+     - `"pipeline_integration_note"`: Details about how workflows or pipelines are arranged.
+
+   - **Computational Resources**:
+     - `"computational_resources"`: Array of:
+       - "High-performance computing", "Cloud computing", "Local cluster", "Other"
+     - `"computational_resources_note"`: Details on computational setups.
+
+   - **Sequencing Technology**:
+     - `"sequencing_technology"`: List of dictionaries:
+       - `"company_name"`: e.g., "Illumina", "Oxford Nanopore", "PacBio"
+       - `"machine_model"`: Model (e.g., "NovaSeq 6000")
+       - `"read_length"`: e.g., "150 bp", or `"Not specified"`
+       - `"protocol"`: e.g., "Paired-end", "Long-read"
+       - `"notes"`: Additional details
+
+   - **Long-Read Technology Related**:
+     - `"long_read_technology_related": true` or `false`.
+
+5. **Contextual and Administrative**:
+
+   - **Publication Date**:
+     - `"publication_year"`: numeric
+     - `"publication_month"`: numeric (1–12)
+
+   - **DOI**:
+     - `"doi"`: Digital Object Identifier string
+
+   - **Journal Impact Factor**:
+     - `"journal_impact_factor"`: numeric or `"Not specified"`
+
+   - **Funding Sources**:
+     - `"funding_sources"`: Array of:
+       - "Government agency", "Private organization", "Institutional", "International organization", "Other"
+
+   - **Open Access**:
+     - `"open_access": true` or `false`.
+
+   - **Ethical Considerations**:
+     - `"ethical_considerations": true` or `false`.
+     - `"ethical_considerations_note"`: If mentioned, provide details.
+
+   - **Data Access and Approvals**:
+     - `"data_access_note"`: Mention if AoU data access approvals, IRB approvals, or special permissions are described.
+
+6. **Impact, Intent, and Future Directions**:
+
+   - **User Community Impact** (1–3):
+     - `"user_community_impact": 1` (Minimal), `2` (Moderate), `3` (High)
+     - `"user_community_impact_note"`: Explain the expected impact on users.
+
+   - **Reproducibility** (1–3):
+     - `"reproducibility": 1` (Low), `2` (Moderate), `3` (High)
+     - `"reproducibility_note"`: Describe available resources (data/code) for replication.
+
+   - **Future Directions**:
+     - `"future_directions_note"`: Potential follow-up studies, expansions, or improvements suggested by the authors.
+
+   - **Study Summary**:
+     - `"summary_of_study_note"`: A concise summary of the study’s main focus, findings, and relevance to AoU.
+
+---
+
+**Formatting Guidelines**:
+
+- Use arrays for fields that may contain multiple values.
+- Use dictionaries for complex structures (e.g., software, sequencing technology).
+- Provide `_note` fields for qualitative, free-text explanations.
+- Ensure all fields adhere to the specified categories and terms.
+- Strive for clarity, consistency, and comprehensive coverage.
+- Use controlled vocabularies where suggested to maintain standardization.
+
+---
+
+**Example JSON**:
+
+```json
+{
+  "aou_related": true,
+  "paper_type": "Research",
+  "scientific_impact": 3,
+  "scientific_impact_note": "Notable advancement in understanding of population health using AoU data.",
+  "scientific_intent": ["Disease association study", "Population health analysis"],
+  "scientific_intent_note": "A GWAS on AoU participants focusing on type 2 diabetes prevalence.",
+  "aou_role": "Primary dataset",
+  "aou_role_note": "AoU genomic and EHR data formed the core dataset.",
+  "aou_data_scope": "Both genomic and phenotypic",
+  "aou_data_scope_note": "Used AoU WGS and EHR records for demographic and clinical traits.",
+  "study_population_note": "Included ~50,000 diverse AoU participants, ensuring broad ancestry representation.",
+  "comparison_with_other_cohorts": true,
+  "comparison_with_other_cohorts_note": "Compared AoU results with UK Biobank data.",
+  "comparison_sets": [
+    ["AoU", "UK Biobank"]
+  ],
+  "data_types_used": ["Whole-genome sequencing", "EHR data"],
+  "data_types_note": "WGS for genetic variants and EHR for clinical phenotypes.",
+  "methodological_details": ["GWAS", "Quality control", "Population structure analysis"],
+  "methodological_details_note": "Used PCA for ancestry correction, standard GWAS QC pipelines.",
+  "software_used": [
+    {
+      "software_name": "Hail",
+      "version": "0.2",
+      "notes": "Used for scalable GWAS and variant annotation."
+    },
+    {
+      "software_name": "PLINK",
+      "version": "1.9",
+      "notes": "GWAS QC and basic association tests."
+    }
+  ],
+  "pipeline_engine": ["WDL"],
+  "pipeline_integration": "Integrated",
+  "pipeline_integration_note": "Combined QC, variant calling, and association steps under one WDL pipeline.",
+  "computational_resources": ["Cloud computing"],
+  "computational_resources_note": "Used Google Cloud Platform for scalable computation.",
+  "sequencing_technology": [
+    {
+      "company_name": "Illumina",
+      "machine_model": "NovaSeq 6000",
+      "read_length": "150 bp",
+      "protocol": "Paired-end",
+      "notes": "Standard AoU WGS protocol"
+    }
+  ],
+  "long_read_technology_related": false,
+  "publication_year": 2023,
+  "publication_month": 7,
+  "doi": "10.1000/exampledoi",
+  "journal_impact_factor": 10.2,
+  "funding_sources": ["Government agency"],
+  "open_access": true,
+  "ethical_considerations": true,
+  "ethical_considerations_note": "AoU IRB approvals and data use agreements mentioned.",
+  "data_access_note": "Accessed AoU data via the Researcher Workbench under approved protocol.",
+  "user_community_impact": 2,
+  "user_community_impact_note": "Moderate; findings may inform clinicians and researchers interested in genetic risk factors.",
+  "reproducibility": 3,
+  "reproducibility_note": "Code and summary statistics provided in supplementary materials.",
+  "future_directions_note": "Future expansions to include imaging and metabolomic data from AoU.",
+  "summary_of_study_note": "A GWAS using AoU genomic and EHR data identifies novel risk loci for type 2 diabetes."
+}

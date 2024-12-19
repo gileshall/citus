@@ -278,7 +278,7 @@ class DOI:
         self.extract_authors_from_tei()
         return self.extract_body_from_tei()
 
-    def analyze_article(self):
+    def analyze_article(self, prompt_name=None):
         if not self.is_published:
             self.logger.info(f"{self.doi.stem} is not published, skipping analysis")
             return None
@@ -288,7 +288,7 @@ class DOI:
             analysis_path = os.path.join(self.cache_path, analysis_filename)
             if not os.path.exists(analysis_path):
                 self.logger.info(f"Analyzing article text at {txt_path}")
-                analysis = analyze_article(txt_path)
+                analysis = analyze_article(txt_path, prompt_name)
                 with open(analysis_path, 'w') as fh:
                     json.dump(analysis, fh, indent=2)
                 self.logger.info(f"Analysis saved to {analysis_path}")
@@ -427,6 +427,7 @@ def resolve_doi(doi, preprint_cutoff=10, cache_path=None):
 if __name__ == "__main__":
     from pprint import pprint
     doi = sys.argv[1]
+    prompt_name = sys.argv[2]
     doi_obj = resolve_doi(doi)
-    text_path = doi_obj.analyze_article()
+    text_path = doi_obj.analyze_article(prompt_name=prompt_name)
     pprint(json.loads(open(text_path).read()))
